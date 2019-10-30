@@ -1,0 +1,41 @@
+# It’s possible to embed your Metricbeat configuration in a custom image. Here is an example Dockerfile to achieve this:
+#
+# FROM docker.elastic.co/beats/metricbeat:6.6.1
+# COPY metricbeat.yml /usr/share/metricbeat/metricbeat.yml
+# USER root
+# RUN chown root:metricbeat /usr/share/metricbeat/metricbeat.yml
+# USER metricbeat
+
+metricbeat.config:
+  modules:
+    path: ${path.config}/modules.d/*.yml
+    # Reload module configs as they change:
+    reload.enabled: false
+
+metricbeat.autodiscover:
+  providers:
+    - type: docker
+      hints.enabled: true
+
+metricbeat.modules:
+- module: docker
+  metricsets:
+    - "container"
+    - "cpu"
+    - "diskio"
+    - "healthcheck"
+    - "info"
+    #- "image"
+    - "memory"
+    - "network"
+  hosts: ["unix:///var/run/docker.sock"]
+  period: 10s
+  enabled: true
+
+processors:
+  - add_cloud_metadata: ~
+
+output.elasticsearch:
+  hosts: ['elasticsearch:9200']
+  username: elastic
+  password: changeme
